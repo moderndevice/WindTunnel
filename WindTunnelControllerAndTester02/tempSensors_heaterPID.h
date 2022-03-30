@@ -24,7 +24,7 @@ Adafruit_MCP9808 HT_temp =  Adafruit_MCP9808();
 
 #define P_ON_M 0
 #define P_ON_E 1
-bool pOnE = true;
+bool pOnE = false;  // this changes the entire calculation of PID
 double initInput;
 const int heaterPin = 45;
 int heatOn = 0, heatFlag = 0;
@@ -35,10 +35,13 @@ int heatOn = 0, heatFlag = 0;
 //double Kp = 500, Ki = 12.0, Kd = 0;
 //double H_Kp = 30, H_Ki = 0.03, H_Kd = 0.05;  //proportional on error settings
 
+/********************* inner loop which controls the heater ******************************/
 //double H_Kp = 45, H_Ki = 0.9, H_Kd = 3.0; // old tuning
-double H_Kp = 50, H_Ki = 0.45, H_Kd = 1.0;
+double H_Kp = 40, H_Ki = 0.1, H_Kd = 0.005;   // the loop that actually controls the heater
 PID heaterPID(&heaterTempC, &OutputPWM, &innerLoopSetpoint, H_Kp, H_Ki, H_Kd,  DIRECT);
-double TC_Kp = 5.0, TC_Ki = 0.06, TC_Kd = 2.0;  // outer, slower loop - detemines delta
+
+/******************** outer, slower loop which controls the differential between the two sensors ************************/
+double TC_Kp = 6.0, TC_Ki = 0.04, TC_Kd = 2.0;  // outer, slower loop - detemines delta between heater and test chamber output
 PID testChPID(&deltaTempC, &outputOffsetC, &setPoint, TC_Kp, TC_Ki, TC_Kd, DIRECT);
 int WindowSize = 1000;
 unsigned long windowStartTime;
@@ -129,20 +132,21 @@ void doTestChamberLoop() { // slower loop to add temp offset for test chamber
   }
   testChPID.Compute();
 
-  /*
-    if (millis() - lastPrintTime > 300) {
-      lastPrintTime = millis();
-      Serial.print("set ");
-      Serial.print(targetTempC); Serial.print("\t");  Serial.print(tempTestChTempC);
-      Serial.print(" TCHT ");     Serial.print((float)testChTempC, 2);  Serial.print("\t");
-      Serial.print("HT ");     Serial.print((float)heaterTempC, 2);  Serial.print("\t");
-      Serial.print("delta "); Serial.print(deltaTempC);  Serial.print("\t");
-      Serial.print("output ");   Serial.print(outputOffsetC);   Serial.print("\t");
-      Serial.print("innerSetpt "); Serial.print(innerLoopSetpoint);   Serial.print("\t");
-      Serial.println(OutputPWM, 2);
-    }
-  */
+#ifdef PIDprint
 
+  if (millis() - lastPrintTime > 300) {
+    lastPrintTime = millis();
+    Serial.print("set ");
+    Serial.print(targetTempC); Serial.print("\t");  Serial.print(tempTestChTempC);
+    Serial.print(" TCHT ");     Serial.print((float)testChTempC, 2);  Serial.print("\t");
+    Serial.print("HT ");     Serial.print((float)heaterTempC, 2);  Serial.print("\t");
+    Serial.print("delta "); Serial.print(deltaTempC);  Serial.print("\t");
+    Serial.print("output ");   Serial.print(outputOffsetC);   Serial.print("\t");
+    Serial.print("innerSetpt "); Serial.print(innerLoopSetpoint);   Serial.print("\t");
+    Serial.println(OutputPWM, 2);
+  }
+
+#endif
 
 }
 
@@ -166,10 +170,14 @@ void readTempC() {
     heaterTempC = smooth(tempHeaterTempC, lowPassFilterVal, heaterTempC);
     testChTempC = smooth(tempTestChTempC, lowPassFilterVal, testChTempC);
 
+#ifdef TempSensorTestprint
+
     Serial.print("testChamber temp ");
     Serial.print(tempTestChTempC);
     Serial.print("\t heater temp ");
     Serial.println(tempHeaterTempC);
+
+#endif
 
   }
 }

@@ -18,7 +18,7 @@ double Fan_Kp = 110, Fan_Ki = 3.0, Fan_Kd = 1.0;
 //PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 // PID fanPID(&fanDoubleTach, &fanDoublePWM, &innerLoopSetpoint, H_Kp, H_Ki, H_Kd,  DIRECT);
 
-fanISR() {  // this reads the fan tach
+void fanISR() {  // this reads the fan tach
    /* there is a glitch in this routine that reports 12 uSta every so often ?!? 
    try hardware debounce - schmidt trigger?*/
   volatile unsigned long tempTime = micros();

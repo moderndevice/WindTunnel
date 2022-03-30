@@ -48,12 +48,12 @@ void testSensors() {
 
     /* assign pins for proper board */
     if (CPflag == REVCFLAG) {
-      windPin = windCpin;
-      tempPin = tempCpin;
+      windPin = revCrawPin;
+      tempPin = revCtempPin;
     }
     else { // rev P
-      windPin = windPpin;
-      tempPin = tempPpin;
+      windPin = revPoutPin;
+      tempPin = revPtempPin;
     }
 
     /* reset all the variables
@@ -117,12 +117,22 @@ void testSensors() {
 
 
 void readWindC() {
+
+ #ifdef SensorTestPrint
+ 
   tester.ADCvolts = ((float)digitalRead(revCrawPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
   tester.tempVolts = (digitalRead(revCtempPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
 
   Serial.print("wind volts "); Serial.print(tester.ADCvolts, 3); Serial.print("\t");
   Serial.print("windC temp "); Serial.print(tester.tempVolts, 3); Serial.println();
+#endif
+  
 }
+
+
+
+
+
 
 
 

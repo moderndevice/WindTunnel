@@ -16,6 +16,10 @@ int CPflag; // 0 = rev C
 #define REVCFLAG 0
 #define REVPFLAG 1
 
+// print directives
+#define PIDprint  1          // PID for heater
+// #define SensorTestPrint  // test sensor setup
+
 #include "Wire.h"
 //#include <LibTempTMP421.h>
 #include "Adafruit_MCP9808.h"
@@ -27,6 +31,8 @@ int CPflag; // 0 = rev C
 #include "readPitot.h"
 #include "fan.h"
 #include "display.h"
+
+
 
 
 /* stupid function prototypes */
