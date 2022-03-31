@@ -24,7 +24,7 @@ Adafruit_MCP9808 HT_temp =  Adafruit_MCP9808();
 
 #define P_ON_M 0
 #define P_ON_E 1
-bool pOnE = false;  // this changes the entire calculation of PID
+bool pOnE = true;  // this changes the entire calculation of PID
 double initInput;
 const int heaterPin = 45;
 int heatOn = 0, heatFlag = 0;
