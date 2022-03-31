@@ -17,7 +17,7 @@ int CPflag; // 0 = rev C
 #define REVPFLAG 1
 
 // print directives
-#define PIDprint  1          // PID for heater
+#define PIDprint  1          // PID for heater            git test - delete this!
 // #define SensorTestPrint  // test sensor setup
 
 #include "Wire.h"
