@@ -105,7 +105,7 @@ void testSensors() {
     else { // rev C
       tester.tempC = tester.tempVolts; // need to convert this to temperature
       /* read the "out" output to test the pot and circuit*/
-      tester.revCoutputVolts = (analogRead(revCoutPin) * ADC_REFERNCEVOLTAGE) / 1024.0;;
+      tester.revCoutputVolts = (analogRead(revCoutPin) * ADC_REFERNCEVOLTAGE) / 1024.0;;\
     }
 
     //    Serial.print("exit "); Serial.println(tester.ADCcountAverage, 1); Serial.print(" total ");
@@ -120,8 +120,8 @@ void readWindC() {
 
  #ifdef SensorTestPrint
  
-  tester.ADCvolts = ((float)digitalRead(revCrawPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
-  tester.tempVolts = (digitalRead(revCtempPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
+  tester.ADCvolts = ((float)analogRead(revCrawPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
+  tester.tempVolts = (analogRead(revCtempPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
 
   Serial.print("wind volts "); Serial.print(tester.ADCvolts, 3); Serial.print("\t");
   Serial.print("windC temp "); Serial.print(tester.tempVolts, 3); Serial.println();
