@@ -23,6 +23,7 @@ int CPflag; // 0 = rev C
 #include "Wire.h"
 //#include <LibTempTMP421.h>
 #include "Adafruit_MCP9808.h"
+#include "Adafruit_BMP3XX.h"
 #include <PID_v1.h>
 #include "modeFunctions.h"
 #include "interfaceBd.h"
@@ -31,9 +32,9 @@ int CPflag; // 0 = rev C
 #include "readPitot.h"
 #include "fan.h"
 #include "display.h"
+#include "barometer.h"
 
-
-
+float barometer;
 
 /* stupid function prototypes */
 void readTempC();
@@ -53,6 +54,7 @@ void setup() {
   printTempDiplay();
   newMode = 1; // triggers more printing
   printTempDiplay();
+  setupBarometer();
 }
 
 void loop() {
@@ -67,6 +69,7 @@ void loop() {
   readPitot();
   readWindC();
   printTempDiplay();
+  getBarometer();
 
     switch (mode) {
       case 0:  // Rev C
