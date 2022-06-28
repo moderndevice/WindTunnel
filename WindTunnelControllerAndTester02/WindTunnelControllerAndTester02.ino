@@ -67,7 +67,7 @@ void loop() {
   doLCD2();
   doFan();
   readPitot();
-  readWindC();
+  testSensors();
   printTempDiplay();
   getBarometer();
 
