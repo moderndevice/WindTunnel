@@ -76,12 +76,12 @@ void loop() {
   getBarometer();
 
   switch (mode) {
-    case 0:  // Rev C
+    case 0:  // Rev C test
       //      testSensors();
       //      CPflag = REVCFLAG;
       break;
 
-    case 1:  // Rev P
+    case 1:  // Rev P test
       testSensors();
       CPflag = REVPFLAG;
       break;

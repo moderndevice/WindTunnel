@@ -3,7 +3,7 @@
   LCDs are outfitte with LCD117 boards so use PAnderson's LCD117 serial protocol
 */
 
-char modeNames[4][13] = {"Rev C Test", "Rev P Test", "Run Curves C", "Run Curves P" };
+char modeNames[4][13] = {"Test Rev C", "Testw Rev P", "Run Curves C", "Run Curves P" };
 extern int newMode, mode;
 
 void initLCD_display() {
@@ -40,12 +40,12 @@ void printTempC() {
   }
 }
 
+/*     mode 0: Rev C test, mode 1: Rev P test, mode 2: C run curves, mode 3:  P run curves */
+
 void printTempDiplay() {
   static unsigned long lastTime, lastTimeDisp;
   static int lastTargetTempC, lastFanPWM;
   static float tempFloat;
-
-
 
   if (millis() - lastTimeDisp > 250) {
     lastTimeDisp = millis();
@@ -53,37 +53,42 @@ void printTempDiplay() {
     SerialLCD1.print(tach);
   }
 
-  if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
-    SerialLCD1.print("?f");
-    SerialLCD1.print("?a");
-    SerialLCD1.print("Set: "); SerialLCD1.print((int)targetTempC); SerialLCD1.print("C P ");
-    //SerialLCD1.print("F ");
-    SerialLCD1.print(fanPWM); SerialLCD1.print(" T ");
-    lastFanPWM = fanPWM;
-    lastTargetTempC = targetTempC;
 
-    newMode = 1;
-
-    // second LCD line
-    SerialLCD1.print("?x00?y1");
-    SerialLCD1.print("Temp: ");
+  if (newMode) {  // do  LCD here to make sure that newMode resets cleanly
+    SerialLCD1.print("?y0?l");
+    SerialLCD1.print(modeNames[mode]); // prints name of function mode triggered from mom switches
+    newMode = 0;
   }
 
-  // testChTempC = tempWT.GetTemperature();
-  SerialLCD1.print("?y1?x06");
-  SerialLCD1.print(testChTempC);
-  SerialLCD1.print(" C    ");
-  SerialLCD1.print(momSw);
+  if (mode == 0 || mode == 1) {   // Sensor Test Functions
 
-  SerialLCD1.print("?y2?x00");
-  SerialLCD1.print("pit "); SerialLCD1.print(pitotOut, 0);
+    if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
+      SerialLCD1.print("?f");
+      SerialLCD1.print("?a");
+      SerialLCD1.print("Set: "); SerialLCD1.print((int)targetTempC); SerialLCD1.print("C P ");
+      //SerialLCD1.print("F ");
+      SerialLCD1.print(fanPWM); SerialLCD1.print(" T ");
+      lastFanPWM = fanPWM;
+      lastTargetTempC = targetTempC;
 
-  if (newMode) {  // do both LCD's here to make sure that newMode resets cleanly
-    SerialLCD1.print("?y3?l");
-    SerialLCD1.print(modeNames[mode]); // prints name of function mode triggered from mom switches
-    Serial2.print("?y3?l");
-    Serial2.print(modeNames[mode]);
-    newMode = 0;
+      newMode = 1;
+
+      // second LCD line
+      SerialLCD1.print("?x00?y1");
+      SerialLCD1.print("Temp: ");
+    }
+
+    // testChTempC = tempWT.GetTemperature();
+    SerialLCD1.print("?y1?x06");
+    SerialLCD1.print(testChTempC);
+    SerialLCD1.print(" C    ");
+    SerialLCD1.print(momSw);
+
+    SerialLCD1.print("?y2?x00");
+    SerialLCD1.print("pit "); SerialLCD1.print(pitotOut, 0);
+
+
+
   }
 
   /* do mode printout */
