@@ -8,20 +8,20 @@ extern int newMode, mode;
 
 void initLCD_display() {
   Serial.begin(57600);
-  Serial1.begin(19200);
+  SerialLCD1.begin(19200);
   delay(20);
-  Serial1.print("?BFF"); // backlight full
+  SerialLCD1.print("?BFF"); // backlight full
   delay(20);
-  Serial1.print("?G420");  // 4x20 chars
+  SerialLCD1.print("?G420");  // 4x20 chars
   delay(20);
-  Serial1.print("?c0"); // turn cursor off
+  SerialLCD1.print("?c0"); // turn cursor off
   delay(50);
-  Serial1.print("?f?a");
-  Serial1.print("?f");
-  Serial1.print("?a");
-  Serial1.print("Fan:  ");
-  Serial1.print("?x00?y1");
-  Serial1.print("Temp: ");  Serial.print(targetTempC);
+  SerialLCD1.print("?f?a");
+  SerialLCD1.print("?f");
+  SerialLCD1.print("?a");
+  SerialLCD1.print("Fan:  ");
+  SerialLCD1.print("?x00?y1");
+  SerialLCD1.print("Temp: ");  Serial.print(targetTempC);
 }
 
 
@@ -45,67 +45,63 @@ void printTempDiplay() {
   static int lastTargetTempC, lastFanPWM;
   static float tempFloat;
 
-  // put in a tolerance to make sure that an absolute value millis
-  // does not get missed with an LCD write.
-  // Possibly not a realistic worry but Software serial has no UART
-  if (millis() - lastTime > 300 ) { // 10 times a sec
-    lastTime = millis();
 
-    if (millis() - lastTimeDisp > 250) {
-      lastTimeDisp = millis();
-      Serial1.print("?x17?y0");
-      Serial1.print(tach);
-    }
 
-    if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
-      Serial1.print("?f");
-      Serial1.print("?a");
-      Serial1.print("Set: "); Serial1.print((int)targetTempC); Serial1.print("C P ");
-      //Serial1.print("F ");
-      Serial1.print(fanPWM); Serial1.print(" T ");
-      lastFanPWM = fanPWM;
-      lastTargetTempC = targetTempC;
-
-      newMode = 1;
-
-      // second LCD line
-      Serial1.print("?x00?y1");
-      Serial1.print("Temp: ");
-    }
-
-    // testChTempC = tempWT.GetTemperature();
-    Serial1.print("?y1?x06");
-    Serial1.print(testChTempC);
-    Serial1.print(" C    ");
-    Serial1.print(momSw);
-
-    Serial1.print("?y2?x00");
-    Serial1.print("pit "); Serial1.print(pitotOut, 0);
-
-    if (newMode) {  // do both LCD's here to make sure that newMode resets cleanly
-      Serial1.print("?y3?l"); 
-      Serial1.print(modeNames[mode]); // prints name of function mode triggered from mom switches
-      Serial2.print("?y3?l");
-      Serial2.print(modeNames[mode]);
-      newMode = 0;
-    }
-
-    /* do mode printout */
-    //  Serial1.print(" ? x2");
-
-    /*
-      if (heatFlag) {
-      Serial1.print(" ? x15 ? y0");
-      delay(10);
-      Serial1.print('H');
-      }
-      else {
-      Serial1.print(" ? x15 ? y0");
-      delay(10);
-      Serial1.print(' ');
-      } */
+  if (millis() - lastTimeDisp > 250) {
+    lastTimeDisp = millis();
+    SerialLCD1.print("?x17?y0");
+    SerialLCD1.print(tach);
   }
+
+  if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
+    SerialLCD1.print("?f");
+    SerialLCD1.print("?a");
+    SerialLCD1.print("Set: "); SerialLCD1.print((int)targetTempC); SerialLCD1.print("C P ");
+    //SerialLCD1.print("F ");
+    SerialLCD1.print(fanPWM); SerialLCD1.print(" T ");
+    lastFanPWM = fanPWM;
+    lastTargetTempC = targetTempC;
+
+    newMode = 1;
+
+    // second LCD line
+    SerialLCD1.print("?x00?y1");
+    SerialLCD1.print("Temp: ");
+  }
+
+  // testChTempC = tempWT.GetTemperature();
+  SerialLCD1.print("?y1?x06");
+  SerialLCD1.print(testChTempC);
+  SerialLCD1.print(" C    ");
+  SerialLCD1.print(momSw);
+
+  SerialLCD1.print("?y2?x00");
+  SerialLCD1.print("pit "); SerialLCD1.print(pitotOut, 0);
+
+  if (newMode) {  // do both LCD's here to make sure that newMode resets cleanly
+    SerialLCD1.print("?y3?l");
+    SerialLCD1.print(modeNames[mode]); // prints name of function mode triggered from mom switches
+    Serial2.print("?y3?l");
+    Serial2.print(modeNames[mode]);
+    newMode = 0;
+  }
+
+  /* do mode printout */
+  //  SerialLCD1.print(" ? x2");
+
+  /*
+    if (heatFlag) {
+    SerialLCD1.print(" ? x15 ? y0");
+    delay(10);
+    SerialLCD1.print('H');
+    }
+    else {
+    SerialLCD1.print(" ? x15 ? y0");
+    delay(10);
+    SerialLCD1.print(' ');
+    } */
 }
+
 
 /******************************** LCD 2 - the tester LCD *********************************/
 
@@ -149,9 +145,6 @@ void doLCD2() {
       Serial2.print("V");
     }
 
-
-
-    
   }
-  
+
 }

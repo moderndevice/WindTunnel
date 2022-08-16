@@ -13,11 +13,13 @@
 
 int CPflag; // 0 = rev C
 
+#define SerialLCD1 Serial1  // define Serial1 as LCD to make coding more clear
+
 #define REVCFLAG 0
 #define REVPFLAG 1
 
 // print directives
-//#define PIDprint  1          // PID for heater            git test - delete this!
+//#define PIDprint  1          // PID for heater    git test - delete this!
 #define SensorTestPrint  // test sensor setup
 
 
@@ -34,7 +36,7 @@ int CPflag; // 0 = rev C
 #include "fan.h"
 #include "display.h"
 #include "barometer.h"
-#inclue "writeSerialData.h"
+#include "writeSerialData.h"
 
 float barometer;
 
@@ -44,7 +46,7 @@ void readTempC();
 int mode = 0, lastMode = 20, newMode = 1; // state variable
 
 void setup() {
-  Serial.begin(57600);
+    initLCD_display();
   delay(1000);
   Serial.println(" sketch begin");
   initInterfaceBd();
@@ -73,25 +75,25 @@ void loop() {
   printTempDiplay();
   getBarometer();
 
-    switch (mode) {
-      case 0:  // Rev C
-    //      testSensors();
-    //      CPflag = REVCFLAG;
-        break;
+  switch (mode) {
+    case 0:  // Rev C
+      //      testSensors();
+      //      CPflag = REVCFLAG;
+      break;
 
-      case 1:  // Rev P
-        testSensors();
-        CPflag = REVPFLAG;
-        break;
+    case 1:  // Rev P
+      testSensors();
+      CPflag = REVPFLAG;
+      break;
 
-      case 2:  // C run curves
-        runCcurves();
-        break;
+    case 2:  // C run curves
+      runCcurves();
+      break;
 
-      case 3:  // P run curves
-        runPcurves();
-        break;
-    } 
+    case 3:  // P run curves
+      runPcurves();
+      break;
+  }
 }
 
 
@@ -102,24 +104,31 @@ void doSwitchDecode() {
 
     if (momSw != 0) {  // button pressed
       switch (momSw) {
+        /*
+               8
+          4          1
+               2
 
-        case 4: // Rev C
-          mode = 0;
+        */
+
+        case 4: // Rev P Test
+          mode = 1;
           CPflag = REVCFLAG;
           break;
 
-        case 2: // Rev P
-          mode = 1;
+        case 2: // run C curves
+          mode = 2;
           CPflag = REVPFLAG;
           break;
 
-        case 1: // run C curves
-          mode = 2;
+        case 1: // Rev C test
+          mode = 0;
           break;
 
         case 8: // run P curves
           mode = 3;
           break;
+          
       }
 
       if (mode != lastMode) {

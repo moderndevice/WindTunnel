@@ -22,10 +22,11 @@ void initInterfaceBd() {  // this is the control board with the pots
 }
 
 void readInterfaceBd() {
+  /** reads teh interface board for pots and switches  **/
 
   static unsigned long lastTime;
     
-  if (millis() - lastTime > 200 ) { // 20 times a sec
+  if (millis() - lastTime > 200 ) { // 5 times a sec
     lastTime = millis();
 
     for (int chan = 0; chan < 8; chan++) {
