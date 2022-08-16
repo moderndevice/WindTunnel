@@ -23,7 +23,6 @@ Tester tester;
 const int revPtempPin = A1;
 const int revPoutPin = A2;
 const int revShutdownPin = A0;
-
 const int revCtempPin = A5;
 const int revCrawPin = A6; //  use this one
 const int revCoutPin = A7; //  don't use this one
@@ -44,7 +43,6 @@ void testSensors() {
   if (millis() - lastADCTime < 12) {  // space out the reads a bit
     return;
   }
-
 
   lastADCTime = millis();
 
@@ -115,14 +113,15 @@ void testSensors() {
 #ifdef SensorTestPrint
 if (millis() - printTime > 500){
   printTime = millis();
-    Serial.print("exit "); Serial.println(tester.ADCcountAverage, 3); Serial.print(" totalWindADC "); Serial.println(totalWindADC);
-    Serial.print("output"); Serial.print(tester.ADCvolts, 3); Serial.print(" V \t "); Serial.print(tester.tempC ); Serial.println("  C");
+    Serial.print("avgADC "); Serial.print(tester.ADCcountAverage, 3); Serial.print(" totalWindADC "); Serial.println(totalWindADC);
+    Serial.print("output"); Serial.print(tester.ADCvolts, 3); Serial.print(" V \t "); Serial.print(tester.tempC ); Serial.print("  C ");
 
     Serial.print(millis() - testTime); Serial.println("ms");
+    Serial.println(); // extra CR
 }
 #endif
 
-    initialized = 0;
+    initialized = 0;  // reset counter and variables
     testTime = millis();
   }
 }
@@ -145,8 +144,6 @@ void readWindC() {
 }
 
 
-
-
 void runCcurves() {
   static float startTemp, endTemp, startPWM, endPWM;
 
@@ -154,9 +151,6 @@ void runCcurves() {
     startTemp = analogRead(pots[2]); endTemp = analogRead(pots[3]);
     startPWM = analogRead(pots[6]);  endPWM = analogRead(pots[7]);
   }
-
-
-
 
 }
 

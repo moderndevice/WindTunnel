@@ -32,15 +32,17 @@ void readPitot() {
     }
   }
   else { // space readings out 5 mS - read Pitot PITOTREADS times
-    if (millis() - lastTime > 3) {
+    if (millis() - lastTime > 5) {
       lastTime = millis();
       int pitotTempADC = analogRead(PITOTPIN);
       // Serial.println(pitotTempADC);
-      pitotTotal += pitotTempADC;
-      pitotReads++;
+      pitotTotal += analogRead(PITOTPIN);
+
       if (pitotTempADC > pitotMaxVal) pitotMaxVal = pitotTempADC;
       if (pitotTempADC < pitotMinVal) pitotMinVal = pitotTempADC;
+      pitotReads++;
 
+      
       if (pitotReads > PITOTREADS - 2) { // reset and report
 
         /* read the tach in synch with the pitot read ??

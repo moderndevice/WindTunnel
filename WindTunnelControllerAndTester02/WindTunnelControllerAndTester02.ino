@@ -18,7 +18,8 @@ int CPflag; // 0 = rev C
 
 // print directives
 //#define PIDprint  1          // PID for heater            git test - delete this!
- #define SensorTestPrint  // test sensor setup
+#define SensorTestPrint  // test sensor setup
+
 
 #include "Wire.h"
 //#include <LibTempTMP421.h>
@@ -33,6 +34,7 @@ int CPflag; // 0 = rev C
 #include "fan.h"
 #include "display.h"
 #include "barometer.h"
+#inclue "writeSerialData.h"
 
 float barometer;
 
