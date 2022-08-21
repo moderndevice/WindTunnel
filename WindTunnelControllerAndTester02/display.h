@@ -42,69 +42,91 @@ void printTempC() {
 
 /*     mode 0: Rev C test, mode 1: Rev P test, mode 2: C run curves, mode 3:  P run curves */
 
+/*  4 x 20 LCD display info - test Mode
+
+   0 Mode     tach
+   1 Set PWM,   Pitot
+   2  Set Temp, test chamber Temp, 'H'
+   3 Unit Voltage, Unit Temp
+
+*/
+
+
 void printTempDiplay() {
-  static unsigned long lastTime, lastTimeDisp;
+  static unsigned long lastTimeSlow, lastTimeDispFast;
   static int lastTargetTempC, lastFanPWM;
   static float tempFloat;
 
-  if (millis() - lastTimeDisp > 250) {
-    lastTimeDisp = millis();
-    SerialLCD1.print("?x17?y0");
-    SerialLCD1.print(tach);
-  }
+//  if (millis() - lastTimeDispFast > 200) {  // print the fast moving data
+//    lastTimeDispFast = millis();
+//
+//
+//    if (heatFlag) {
+//      SerialLCD1.print("?x13?y0");
+//      SerialLCD1.print('H');
+//    }
+//
+//    SerialLCD1.print("?x15??y0");  SerialLCD1.print(tach); // tach
+//    if (tach < 1000) {
+//      SerialLCD1.print(" ");
+//
+//      SerialLCD1.print("?y2?x12");    // print Temp Data
+//      SerialLCD1.print(testChTempC);
+//      SerialLCD1.print("?y2?x19"); SerialLCD1.print("    ");
+//
+//      //   if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
+//    }
+//  }
 
 
-  if (newMode) {  // do  LCD here to make sure that newMode resets cleanly
-    SerialLCD1.print("?y0?l");
+
+
+  if (millis() - lastTimeSlow > 1500) {
+    // print the the slower moving data once a second - need to synch up the positions with fast moving data
+    lastTimeSlow = millis();
+
+    SerialLCD1.print("?f"); // clear screen
+
+
+    //SerialLCD1.print("?y0?l");  // line 0
     SerialLCD1.print(modeNames[mode]); // prints name of function mode triggered from mom switches
-    newMode = 0;
-  }
+    SerialLCD1.print("?y0?x15");
+    SerialLCD1.print(tach); // tach
 
-  if (mode == 0 || mode == 1) {   // Sensor Test Functions
+    // line 1
+    SerialLCD1.print("?x00?y1PWM ");
+    SerialLCD1.print(fanPWM); // PWM
+    SerialLCD1.print("?x10?y1 Pit ");
+    SerialLCD1.print(pitotOut, 0);  // pitot
 
-    if (lastTargetTempC != targetTempC || lastFanPWM != fanPWM) { // only write display if temp or fan setting changes
-      SerialLCD1.print("?f");
-      SerialLCD1.print("?a");
-      SerialLCD1.print("Set: "); SerialLCD1.print((int)targetTempC); SerialLCD1.print("C P ");
-      //SerialLCD1.print("F ");
-      SerialLCD1.print(fanPWM); SerialLCD1.print(" T ");
-      lastFanPWM = fanPWM;
-      lastTargetTempC = targetTempC;
+    // line 2
+    SerialLCD1.print("?x00?y2");
+    SerialLCD1.print("Set ");
+    SerialLCD1.print((int)targetTempC);  // PWM
+    SerialLCD1.print("C");
 
-      newMode = 1;
+    SerialLCD1.print("?011?y2");
+    SerialLCD1.print("T ");
+    SerialLCD1.print((float)testChTempC, 2);
+    SerialLCD1.print(" C ");
 
-      // second LCD line
-      SerialLCD1.print("?x00?y1");
-      SerialLCD1.print("Temp: ");
-    }
-
-    // testChTempC = tempWT.GetTemperature();
-    SerialLCD1.print("?y1?x06");
-    SerialLCD1.print(testChTempC);
-    SerialLCD1.print(" C    ");
-    SerialLCD1.print(momSw);
-
-    SerialLCD1.print("?y2?x00");
-    SerialLCD1.print("pit "); SerialLCD1.print(pitotOut, 0);
-
-
-
-  }
-
-  /* do mode printout */
-  //  SerialLCD1.print(" ? x2");
-
-  /*
     if (heatFlag) {
-    SerialLCD1.print(" ? x15 ? y0");
-    delay(10);
-    SerialLCD1.print('H');
+      SerialLCD1.print('H');
     }
-    else {
-    SerialLCD1.print(" ? x15 ? y0");
-    delay(10);
-    SerialLCD1.print(' ');
-    } */
+
+    // line 3
+
+    // second LCD line
+    SerialLCD1.print("?x00?y3");
+    SerialLCD1.print("Pitot ");
+    SerialLCD1.print(pitotOut, 0);
+
+    lastFanPWM = fanPWM;
+    lastTargetTempC = targetTempC;
+    newMode = 1;
+  }
+
+
 }
 
 
