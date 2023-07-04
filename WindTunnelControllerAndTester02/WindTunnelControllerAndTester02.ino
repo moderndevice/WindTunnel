@@ -11,18 +11,20 @@
     Git test
 */
 
+// define Serial1 as LCD to make coding more clear
 int CPflag; // 0 = rev C
-
-#define SerialLCD1 Serial1  // define Serial1 as LCD to make coding more clear
 
 #define REVCFLAG 0
 #define REVPFLAG 1
 
 // print directives
 //#define PIDprint  1          // PID for heater    git test - delete this!
-#define SensorTestPrint  // test sensor setup
+//#define SensorTestPrint  // test sensor setup
+//#define TempSensorTestprint
+//#define curvePdebug
+#define sendDataToProcessing
 
-
+#include "fan.h"
 #include "Wire.h"
 //#include <LibTempTMP421.h>
 #include "Adafruit_MCP9808.h"
@@ -33,20 +35,21 @@ int CPflag; // 0 = rev C
 #include "utility.h"
 #include "tempSensors_heaterPID.h"
 #include "readPitot.h"
-#include "fan.h"
 #include "display.h"
 #include "barometer.h"
 #include "writeSerialData.h"
+#include "runCurves.h"
 
 float barometer;
 
 /* stupid function prototypes */
 void readTempC();
+void doFan(int fanPWM);
 
-int mode = 0, lastMode = 20, newMode = 1; // state variable
+int controlMode = 0, lastMode = 20, newMode = 1; // state variable
 
 void setup() {
-    initLCD_display();
+  initLCD_display();
   delay(1000);
   Serial.println(" sketch begin");
   initInterfaceBd();
@@ -54,28 +57,34 @@ void setup() {
   initLCD2();
   initFan();
   initLCD_display();
+  pinMode(startSwitchPin, INPUT_PULLUP);
   newMode = 1; // triggers more printing
   printTempDiplay();
   newMode = 1; // triggers more printing
   printTempDiplay();
   setupBarometer();
+  // for the LED panel at top of controls
+  pinMode(LED_WHITE_PIN, OUTPUT);
+  pinMode(LED_RED_PIN, OUTPUT);
+  pinMode(LED_GREEN_PIN, OUTPUT);
+  pinMode(LED_BLUE_PIN, OUTPUT);
+  pinMode(startSwitchPin, INPUT_PULLUP);
+  pinMode(resetSwitchPin, INPUT_PULLUP);
 }
 
 void loop() {
-
   readTempC();
   readInterfaceBd();
   doHeaterLoop();    // heater control
   doTestChamberLoop(); // offset control for temp offset
   doSwitchDecode();
-  doLCD2();
-  doFan();
+  //doLCD2();
+  doFan(fanPWM);
   readPitot();
-  testSensors();
-  printTempDiplay();
+  //printTempDiplay();
   getBarometer();
 
-  switch (mode) {
+  switch (controlMode) {
     case 0:  // Rev C test
       //      testSensors();
       //      CPflag = REVCFLAG;
@@ -87,7 +96,7 @@ void loop() {
       break;
 
     case 2:  // C run curves
-      runCcurves();
+      //      runCcurves();
       break;
 
     case 3:  // P run curves
@@ -95,7 +104,6 @@ void loop() {
       break;
   }
 }
-
 
 void doSwitchDecode() {
   static unsigned long lastStateRead;
@@ -108,31 +116,30 @@ void doSwitchDecode() {
                8
           4          1
                2
-
         */
 
         case 4: // Rev P Test
-          mode = 1;
+          controlMode = 1;
           CPflag = REVCFLAG;
           break;
 
         case 2: // run C curves
-          mode = 2;
+          controlMode = 2;
           CPflag = REVPFLAG;
           break;
 
         case 1: // Rev C test
-          mode = 0;
+          controlMode = 0;
           break;
 
         case 8: // run P curves
-          mode = 3;
+          controlMode = 3;
           break;
-          
+
       }
 
-      if (mode != lastMode) {
-        lastMode = mode;
+      if (controlMode != lastMode) {
+        lastMode = controlMode;
         newMode = 1;
       }
     }

@@ -30,6 +30,6 @@ void getBarometer() {
     }
 
     barometer = bmp.pressure / 100.0;
-    Serial.print("barometer "); Serial.println(barometer);
+    // Serial.print("barometer "); Serial.println(barometer);
   }
 }

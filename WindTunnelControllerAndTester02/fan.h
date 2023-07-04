@@ -19,8 +19,8 @@ double Fan_Kp = 110, Fan_Ki = 3.0, Fan_Kd = 1.0;
 // PID fanPID(&fanDoubleTach, &fanDoublePWM, &innerLoopSetpoint, H_Kp, H_Ki, H_Kd,  DIRECT);
 
 void fanISR() {  // this reads the fan tach
-   /* there is a glitch in this routine that reports 12 uSta every so often ?!? 
-   try hardware debounce - schmidt trigger?*/
+  /* there is a glitch in this routine that reports 12 uSta every so often ?!?
+    try hardware debounce - schmidt trigger?*/
   volatile unsigned long tempTime = micros();
   ISRperiod = tempTime - lastInterrTime;
   lastInterrTime = tempTime;
@@ -39,15 +39,12 @@ void initFan() {
 }
 
 
-void doFan() {
+void doFan(int fanPWM) {
   static unsigned long lastTimePWM, lastTimeTach;
+  static int localFanPWM;
 
-
-  if (millis() - lastTimePWM > 40) { //time to PWM speed
+  if (millis() - lastTimePWM > 20) { //time to PWM speed
     lastTimePWM = millis();
-    fanPWM = ((pots[fanPotNumber] / 4) / 5) * 5 ; // quantize to 5's
-    if (fanPWM > 255) fanPWM = 255;
-    // analogWrite(fanPWMpin, fanPWM + PWMCALIBRATION); // note calibration fudge
     analogWrite(fanPWMpin, fanPWM + PWMCALIBRATION); // note calibration fudge
 
     // Serial.println(ISRperiod);
@@ -58,9 +55,9 @@ void doFan() {
       arrayTotal = arrayTotal + ISRperiod;
       smoothArrayCounter = (smoothArrayCounter + 1) % ISRSMOOTHSAMPLES;
       int smoothTach = arrayTotal / ISRSMOOTHSAMPLES;
-      tach = (1000000 / smoothTach ); 
+      tach = (1000000 / smoothTach );
 
-     // Serial.print(ISRperiod); Serial.print("\t smooth"); Serial.print(smoothTach); Serial.print("\t tach"); Serial.println(tach);
+      // Serial.print(ISRperiod); Serial.print("\t smooth"); Serial.print(smoothTach); Serial.print("\t tach"); Serial.println(tach);
       newISRdata = 0;
     }
 

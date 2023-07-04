@@ -3,8 +3,10 @@
     Data from the Wind C and Wind P test jigs are also sent out serial port
 */
 #define ADC_REFERNCEVOLTAGE 4.99 // meausure or use AREF pin?
+#define fanPotNumber 0
 int curvesInit = 0; // stores initFlag for function that runs curves
 extern int pots[8];
+extern int fanPWM;
 
 struct Tester {
   float ADCcountAverage;
@@ -12,7 +14,7 @@ struct Tester {
   int deltaCount;
   float tempVolts;
   float tempC;
-  float revCoutputVolts;
+  float sensorOutVolts;
   float pitot;
 };
 
@@ -26,19 +28,25 @@ const int revShutdownPin = A0;
 const int revCtempPin = A5;
 const int revCrawPin = A6; //  use this one
 const int revCoutPin = A7; //  don't use this one
-
 const int pitotPin = A15;
+extern double targetTempC; // for PID temp control
 
 
 void testSensors() {
 
-
+Serial.println("testSensors - what is calling this ???????");
+Serial.println();
   /* tests Rev C and P sensors - wiring is different for test jigs but
      software is mostly the same.
   */
   unsigned int bufADC = 0, bufPitot = 0;
   static int counter, maxv, minv, maxPitot, minPitot, initialized = 0, windPin, tempPin;
-  static unsigned long totalWindADC, totalPitot, lastADCTime, testTime, printTime;
+  static unsigned long totalWindADC, totalPitotADC, lastADCTime, testTime, printTime;
+
+  targetTempC = map(pots[4], 0, 1023, 15, 48); // temp times 2 in map  - this needs to go someplace else
+  fanPWM = ((pots[fanPotNumber] / 4) / 5) * 5 ; // quantize to 5's
+  doFan(fanPWM);
+  if (fanPWM > 255) fanPWM = 255;
 
   if (millis() - lastADCTime < 12) {  // space out the reads a bit
     return;
@@ -83,18 +91,18 @@ void testSensors() {
 
   totalWindADC += bufADC; // accumulate total for some smoothing
 
- 
+
 
   //  Serial.print("read "); Serial.print(millis());
   //  Serial.print("  ");  Serial.print(totalWindADC);  Serial.print(" "); Serial.println(counter);
   //Serial.println(counter);
- counter++;
+  counter++;
   if (counter > 9) {
 
     tester.ADCcountAverage = (float)totalWindADC / 10.0;
     tester.deltaCount = maxv - minv;
     tester.ADCvolts =  ((float) tester.ADCcountAverage * ADC_REFERNCEVOLTAGE) / 1024.0;  // voltage measured empirically on tester
-    tester.pitot = totalPitot / 10.0;
+    tester.pitot = totalPitotADC / 10.0;
 
     tester.tempVolts = (analogRead(tempPin) * ADC_REFERNCEVOLTAGE) / 1024.0;  // convert to volts
     // VOUT = TC  TA + V0°C  MCP9701/9701A datasheet
@@ -107,18 +115,18 @@ void testSensors() {
     else { // rev C
       tester.tempC = tester.tempVolts; // need to convert this to temperature
       /* read the "out" output to test the pot and circuit*/
-      tester.revCoutputVolts = (analogRead(revCoutPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
+      tester.sensorOutVolts = (analogRead(revCoutPin) * ADC_REFERNCEVOLTAGE) / 1024.0;
     }
 
 #ifdef SensorTestPrint
-if (millis() - printTime > 500){
-  printTime = millis();
-    Serial.print("avgADC "); Serial.print(tester.ADCcountAverage, 3); Serial.print(" totalWindADC "); Serial.println(totalWindADC);
-    Serial.print("output"); Serial.print(tester.ADCvolts, 3); Serial.print(" V \t "); Serial.print(tester.tempC ); Serial.print("  C ");
+    if (millis() - printTime > 500) {
+      printTime = millis();
+      Serial.print("avgADC "); Serial.print(tester.ADCcountAverage, 3); Serial.print(" totalWindADC "); Serial.println(totalWindADC);
+      Serial.print("output"); Serial.print(tester.ADCvolts, 3); Serial.print(" V \t "); Serial.print(tester.tempC ); Serial.print("  C ");
 
-    Serial.print(millis() - testTime); Serial.println("ms");
-    Serial.println(); // extra CR
-}
+      Serial.print(millis() - testTime); Serial.println("ms");
+      Serial.println(); // extra CR
+    }
 #endif
 
     initialized = 0;  // reset counter and variables
@@ -140,20 +148,5 @@ void readWindC() {
     Serial.print("windC temp "); Serial.print(tester.tempVolts, 3); Serial.println();
   }
 #endif
-
-}
-
-
-void runCcurves() {
-  static float startTemp, endTemp, startPWM, endPWM;
-
-  if (!curvesInit) {
-    startTemp = analogRead(pots[2]); endTemp = analogRead(pots[3]);
-    startPWM = analogRead(pots[6]);  endPWM = analogRead(pots[7]);
-  }
-
-}
-
-void runPcurves() {
 
 }

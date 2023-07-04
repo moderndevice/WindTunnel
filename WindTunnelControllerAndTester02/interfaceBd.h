@@ -33,7 +33,7 @@ void readInterfaceBd() {
       pots[chan] = adc.readADC(chan);
     }
 
-    momSw = 0;
+    //momSw = 0;
     for (int pin = 9; pin < 13; pin++) {  // read 4 switches and encode binary
       momSw = (momSw * 2) + !digitalRead(pin); // switches active low state
     }

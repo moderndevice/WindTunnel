@@ -7,11 +7,12 @@
 
 //Define Variables we'll be connecting to
 
-double targetTempC = 18.0, testChTempC, heaterTempC, OutputPWM, deltaTempC, outputOffsetC, setPoint = 0;
+double targetTempC, testChTempC, heaterTempC, OutputPWM, deltaTempC, outputOffsetC, setPoint = 0;
 double innerLoopSetpoint;
 const float lowPassFilterVal = 0.5; // 0.0 - 1.0  - 1.0 is more filtering
 int HeaterI2Caddress =  0x1E;
 int WindTunnelI2Caddress = 0x2A;
+bool targetTempReached = false;
 
 /* wind tunnel now has MCP9808 temp sensors */
 
@@ -131,6 +132,11 @@ void doTestChamberLoop() { // slower loop to add temp offset for test chamber
     // else innerLoopSetpoint = 0;
   }
   testChPID.Compute();
+  if  (abs(targetTempC - testChTempC) < 0.6) {
+    targetTempReached = true;
+  } else {
+    targetTempReached = false;
+  }
 
 #ifdef PIDprint
 
@@ -165,7 +171,8 @@ void readTempC() {
 
     tempHeaterTempC = HT_temp.readTempC();
     tempTestChTempC = (WT_temp1.readTempC() + WT_temp2.readTempC()) / 2.0;
-    targetTempC = map(pots[4], 0, 1023, 15, 48); // temp times 2 in map
+//    targetTempC = map(pots[4], 0, 1023, 15, 48); // temp times 2 in map  - this needs to go someplace else
+// to accomodate automatic control
 
     heaterTempC = smooth(tempHeaterTempC, lowPassFilterVal, heaterTempC);
     testChTempC = smooth(tempTestChTempC, lowPassFilterVal, testChTempC);
