@@ -39,6 +39,7 @@ int CPflag; // 0 = rev C
 #include "barometer.h"
 #include "writeSerialData.h"
 #include "runCurves.h"
+#include "switchDecode_controlModes.h"
 
 float barometer;
 
@@ -46,7 +47,7 @@ float barometer;
 void readTempC();
 void doFan(int fanPWM);
 
-int controlMode = 0, lastMode = 20, newMode = 1; // state variable
+//int controlMode = 0, lastMode = 20, newMode = 1; // state variable
 
 void setup() {
   initLCD_display();
@@ -84,25 +85,7 @@ void loop() {
   //printTempDiplay();
   getBarometer();
 
-  switch (controlMode) {
-    case 0:  // Rev C test
-      //      testSensors();
-      //      CPflag = REVCFLAG;
-      break;
 
-    case 1:  // Rev P test
-      testSensors();
-      CPflag = REVPFLAG;
-      break;
-
-    case 2:  // C run curves
-      //      runCcurves();
-      break;
-
-    case 3:  // P run curves
-      runPcurves();
-      break;
-  }
 }
 
 void doSwitchDecode() {

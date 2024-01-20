@@ -27,8 +27,10 @@ enum curveP_State {
   INCREMENT,
   DONE
 };
+ 
 
-char cP_States[8][16] = {"WT_4_STRT", "STB_DELY", "WT_4_TMP", "CAPTURE", "INCREMNT", "DONE", "DONE"};
+/* states to control various test modes */
+char cP_States[10][16] = {"WT_4_STRT", "STB_DELY", "WT_4_TMP", "CAPTURE", "INCRMNT", "DONE", "DONE", "MAN_C", "MAN_P"};
 
 enum curveP_State cPstate = WAIT_4_START;
 

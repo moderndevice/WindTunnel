@@ -1,4 +1,4 @@
-/* Fan Control functions and PID for temperature control */
+s/* Fan Control functions and PID for temperature control */
 
 #define fanTachPin 2  // yellow wire
 #define fanPWMpin  5  // orange wire (blue on fan) wire timer 3 (pin 2, 3, 5)

@@ -3,7 +3,7 @@
   LCDs are outfitte with LCD117 boards so use PAnderson's LCD117 serial protocol
 */
 
-char modeNames[4][13] = {"Test Rev C", "Test Rev P", "Run Curves C", "Run P Curve" };
+//char modeNames[4][13] = {"Test Rev C", "Test Rev P", "Run Curves C", "Run P Curve" }; //in the main file
 extern int newMode, controlMode;
 
 void initLCD_display() {
