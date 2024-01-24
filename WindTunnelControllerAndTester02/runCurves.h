@@ -6,8 +6,9 @@ const int PWMendPot = 3;
 const int CurvesTempPot = 6;
 unsigned long curvesDelayMillis, printDebugMillis;
 int beginFanPWM, endFanPWM, currentFanPWM;
-static int beginCurvesTempC, endCurvesTempC, currentTempC;
+int beginCurvesTempC, endCurvesTempC, currentTempC;
 bool runPcurvesInitialized = false;
+
 
 const int LED_WHITE_PIN = 36;
 const int LED_RED_PIN = 37;
@@ -35,6 +36,8 @@ enum curveP_State {
 /* states to control various test modes */
 char cP_States[10][16] = {"WAIT", "STDL", "4TMP", "CPTR", "INCR", "DONE", "DONE", "MAN_C", "MAN_P"};
 enum curveP_State cPstate = WAIT_4_START;
+
+float sensorVolts,  pitot_FP, tachFloat, pitotVolts, sensorADC, tachPitotRatio;
 
 // reference char modeNames[4][13] = {"Man C", "Man P", "Crvs C", "Crvs P" };
 
@@ -124,6 +127,7 @@ void runCurves(int modeFlag) {
   static unsigned long dataPoints = 0;
   static int modeNameSel = 0;
 
+
   unsigned long long totalPitotADCScaled, totalSensorPWM_Scaled; // 64 bits
   float pitot, sensVolts;
 
@@ -151,8 +155,8 @@ void runCurves(int modeFlag) {
       beginCurvesTempC = map(pots[6], 0, 1023, 15, 48); // temp times 2 in map
       endCurvesTempC = map(pots[7], 0, 1023, 15, 48);
       currentTempC = beginCurvesTempC;
-      targetTempC = beginCurvesTempC;
-      currentTemp = beginCurvesTempC;
+      targetTempC = (float)beginCurvesTempC;
+      currentTempC = beginCurvesTempC;
       Serial.println("W_4_S");
       doFan(fanPWM);
       resetLEDs();
@@ -165,7 +169,7 @@ void runCurves(int modeFlag) {
         stabilizeMillis = millis();
         doFan(fanPWM = beginFanPWM);
         //doP_CurvesDiplay(1); delete this if not necessary
-        targetTempC = beginCurvesTempC;
+        targetTempC = (float)beginCurvesTempC;
 
         delay(500); // debounce the switch
         cPstate = STABLILZE_DELAY;
@@ -200,7 +204,7 @@ void runCurves(int modeFlag) {
       resetLEDs();
       digitalWrite(LED_RED_PIN , HIGH);
 
-      if (targetTempReached) {
+      if (targetTempReached) {  //figure out where this is coming from
         captureMillis = millis();
         totalTach = 0;
         totalPitotADC = 0;
@@ -251,12 +255,12 @@ void runCurves(int modeFlag) {
       digitalWrite(LED_RED_PIN , HIGH);
       delay(200);
 
-      float pitot_FP = (float)totalPitotADC / (float)dataPoints;
-      float tachFloat =  (float)totalTach / (float)dataPoints;
-      float pitotVolts = (pitot_FP * ADC_REFERNCEVOLTAGE) / 1024.0;
-      float sensorADC = (float)totalSensorADC / (float)dataPoints;
-      float sensorVolts = (sensorADC * ADC_REFERNCEVOLTAGE) / 1024.0;
-      float tachPitotRatio = (pitotVolts * 1000 / tachFloat) ;
+      pitot_FP = (float)totalPitotADC / (float)dataPoints;
+      tachFloat =  (float)totalTach / (float)dataPoints;
+      pitotVolts = (pitot_FP * ADC_REFERNCEVOLTAGE) / 1024.0;
+      sensorADC = (float)totalSensorADC / (float)dataPoints;
+      sensorVolts = (sensorADC * ADC_REFERNCEVOLTAGE) / 1024.0;
+      tachPitotRatio = (pitotVolts * 1000 / tachFloat) ;
       totalPitotADC = 0;
       totalSensorADC = 0;
       totalTach = 0;
@@ -279,26 +283,31 @@ void runCurves(int modeFlag) {
       if (fanPWM != endFanPWM) {  /* Increment fand speed (PWM) */
         if ( endFanPWM < endFanPWM) {
           fanPWM += PWM_INCREMENT_AMOUNT;
+
         } else {
           fanPWM -= PWM_INCREMENT_AMOUNT;
         }
-      } else {    /* Increment temp */
+        cPstate = STABLILZE_DELAY;
+  
+
+      } else {  // fan is satisfied fanPWM == endFanPWM, check temperature
         if (currentTempC == endCurvesTempC) {    // check for done
           fanPWM = 100;
           doFan(fanPWM);
           coolDownMillis = millis();
           cPstate = DONE;
-        } else {  // increment
+        } else {      /* Increment temp */
           if ( beginCurvesTempC < endCurvesTempC) {  // calculate and report data
             currentTempC += TEMP_INCREMENT_AMOUNT;
           } else {
             currentTempC -= TEMP_INCREMENT_AMOUNT;
           }
-
+          cPstate =  STABLILZE_DELAY;
           targetTempC = (float)currentTempC;  // updates the heater temperature
         }
       }
     }
+
 
     /******************** DONE ********************/
   } else if (cPstate == DONE) {   // this is kind of an abort setting to reset in middle of a cycle
@@ -339,5 +348,4 @@ void runCurves(int modeFlag) {
   }
 #endif
 
-}
 }
