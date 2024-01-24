@@ -18,14 +18,15 @@ int CPflag; // 0 = rev C
 #define REVPFLAG 1
 
 // print directives
-//#define PIDprint  1          // PID for heater    git test - delete this!
+#define PIDprint  1          // PID for heater    git test - delete this!
 //#define SensorTestPrint  // test sensor setup
 //#define TempSensorTestprint
 //#define curvePdebug
-#define sendDataToProcessing
+//#define sendDataToProcessing
 
 #include "fan.h"
 #include "Wire.h"
+#include "switchDecode_controlModes.h"
 //#include <LibTempTMP421.h>
 #include "Adafruit_MCP9808.h"
 #include "Adafruit_BMP3XX.h"
@@ -39,13 +40,13 @@ int CPflag; // 0 = rev C
 #include "barometer.h"
 #include "writeSerialData.h"
 #include "runCurves.h"
-#include "switchDecode_controlModes.h"
 
 float barometer;
 
 /* stupid function prototypes */
 void readTempC();
 void doFan(int fanPWM);
+void manualTest(int cpFlag);
 
 //int controlMode = 0, lastMode = 20, newMode = 1; // state variable
 
@@ -58,7 +59,6 @@ void setup() {
   initLCD2();
   initFan();
   initLCD_display();
-  pinMode(startSwitchPin, INPUT_PULLUP);
   newMode = 1; // triggers more printing
   printTempDiplay();
   newMode = 1; // triggers more printing
@@ -76,7 +76,7 @@ void setup() {
 void loop() {
   readTempC();
   readInterfaceBd();
-  doHeaterLoop();    // heater control
+  doHeaterLoop();      // heater control
   doTestChamberLoop(); // offset control for temp offset
   doSwitchDecode();
   //doLCD2();
@@ -84,47 +84,4 @@ void loop() {
   readPitot();
   //printTempDiplay();
   getBarometer();
-
-
-}
-
-void doSwitchDecode() {
-  static unsigned long lastStateRead;
-  if (millis() - lastStateRead > 60) {
-    lastStateRead = millis();
-
-    if (momSw != 0) {  // button pressed
-      switch (momSw) {
-        /*
-               8
-          4          1
-               2
-        */
-
-        case 4: // Rev P Test
-          controlMode = 1;
-          CPflag = REVCFLAG;
-          break;
-
-        case 2: // run C curves
-          controlMode = 2;
-          CPflag = REVPFLAG;
-          break;
-
-        case 1: // Rev C test
-          controlMode = 0;
-          break;
-
-        case 8: // run P curves
-          controlMode = 3;
-          break;
-
-      }
-
-      if (controlMode != lastMode) {
-        lastMode = controlMode;
-        newMode = 1;
-      }
-    }
-  }
 }

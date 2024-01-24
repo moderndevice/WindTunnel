@@ -1,9 +1,12 @@
+#define PWM_INCREMENT_AMOUNT 5 // amount to increment fan between iterations
+#define TEMP_INCREMENT_AMOUNT 1 // amount to increment heater between iterations
+
 const int PWMbeginPot = 2;
 const int PWMendPot = 3;
 const int CurvesTempPot = 6;
 unsigned long curvesDelayMillis, printDebugMillis;
 int beginFanPWM, endFanPWM, currentFanPWM;
-float beginCurvesTempC, endCurvesTempC;
+static int beginCurvesTempC, endCurvesTempC, currentTempC;
 bool runPcurvesInitialized = false;
 
 const int LED_WHITE_PIN = 36;
@@ -27,12 +30,13 @@ enum curveP_State {
   INCREMENT,
   DONE
 };
- 
+
 
 /* states to control various test modes */
-char cP_States[10][16] = {"WT_4_STRT", "STB_DELY", "WT_4_TMP", "CAPTURE", "INCRMNT", "DONE", "DONE", "MAN_C", "MAN_P"};
-
+char cP_States[10][16] = {"WAIT", "STDL", "4TMP", "CPTR", "INCR", "DONE", "DONE", "MAN_C", "MAN_P"};
 enum curveP_State cPstate = WAIT_4_START;
+
+// reference char modeNames[4][13] = {"Man C", "Man P", "Crvs C", "Crvs P" };
 
 resetLEDs() {
   digitalWrite(LED_WHITE_PIN, LOW);
@@ -41,9 +45,9 @@ resetLEDs() {
   digitalWrite(LED_BLUE_PIN, LOW);
 }
 
-void doP_CurvesDiplay(int displayMode) { // Temp thing to put up mode names
+void doP_CurvesDiplay(int modeNameNumber) { // Temp thing to put up mode names
   static unsigned long lastTimeSlow, lastTimeDispFast;
-  if (millis() - lastTimeSlow > 700) {
+  if (millis() - lastTimeSlow > 500) {
     // print the the slower moving data once a second - need to synch up the positions with fast moving data
     lastTimeSlow = millis();
 
@@ -51,7 +55,7 @@ void doP_CurvesDiplay(int displayMode) { // Temp thing to put up mode names
 
     // line 0
     Serial1.print("?x00?y0");
-    Serial1.print(modeNames[controlMode]); // prints name of function mode triggered from mom switches
+    Serial1.print(modeNames[modeNameNumber]); // prints name of function mode triggered from mom switches
     Serial1.print("?y0?x15    ");
     Serial1.print("?y0?x15");
     Serial1.print(tach); // tach
@@ -67,7 +71,7 @@ void doP_CurvesDiplay(int displayMode) { // Temp thing to put up mode names
     Serial1.print("   "); // erase space
     Serial1.print("?x09?y1");
     Serial1.print(endFanPWM);
-    Serial1.print(" PWM    ");
+    Serial1.print("PWM  ");
     Serial1.print("?x17?y1");
     Serial1.print(fanPWM);
 
@@ -75,30 +79,34 @@ void doP_CurvesDiplay(int displayMode) { // Temp thing to put up mode names
     Serial1.print("?x00?y2");
     Serial1.print("  "); // erase space
     Serial1.print("?x00");
-    Serial1.print(beginCurvesTempC);
+    Serial1.print((int)beginCurvesTempC);
     Serial1.print("C - ");
-    Serial1.print("?x06");
-    Serial1.print("  "); // erase space
-    Serial1.print(endCurvesTempC);
-    Serial1.print("C TC ");
-    Serial1.print("?x13");
+    Serial1.print("?x07");
     Serial1.print("   "); // erase space
+    Serial1.print("?x07");
+    Serial1.print((int)endCurvesTempC);
+    Serial1.print("C TC ");
+    Serial1.print("?x14");
+    Serial1.print("   "); // erase space
+    Serial1.print("?x14");
     Serial1.print(tempTestChTempC);
     Serial1.print("C");
 
     // line 3
-    Serial1.print("?x00?y3Pit     ");
-    Serial1.print("?x04?y3");
+    Serial1.print("?x00?y3Pt     ");
+    Serial1.print("?x03?y3");
     Serial1.print(pitotOut, 0);  // pitot
-    Serial1.print("?x10?y3");
-    Serial1.print("          ");
-    Serial1.print("?x10?y3");
+    Serial1.print("?x08?y3");
+    Serial.println(sensorVolts, 1);
+
+
+    Serial1.print("    ");
+    Serial1.print("?x12?y3");
     Serial1.print(cP_States[cPstate]); // state machine state
   }
 }
 
-
-void runPcurves() {
+void runCurves(int modeFlag) {
   /* this function is setup as a state machine that checks the temperature compliance
      then agregates sensor and voltage data over a period. And finally reports data.
      The "Start Switch" (momentary) starts the state machine but also resets it,
@@ -108,11 +116,13 @@ void runPcurves() {
   const unsigned long STABILIZE_DELAY_MS = 20000;  // waiting period for fan to stabilize
   const unsigned long DATA_GATHERING_PERIOD_MS = 30000;  // period to gather data to integrate
   const unsigned long COOL_DOWN_MS = 1000 * 60 * 15; // 15 min
-  static unsigned long resetDelay, captureMillis, stabilizeMillis, timeGrainMillis, coolDownMillis;
+  static unsigned long resetDelay = 1000, captureMillis, stabilizeMillis, timeGrainMillis, coolDownMillis;
   const  unsigned long timeGrain_MS = 7;  // overall sampling rate  odd number to go in and out of phase with power line freq (16.66 mS)
+
   static bool runPcurvesInitialized = false;
   static unsigned long long totalTach, totalPitotADC, totalSensorADC;
   static unsigned long dataPoints = 0;
+  static int modeNameSel = 0;
 
   unsigned long long totalPitotADCScaled, totalSensorPWM_Scaled; // 64 bits
   float pitot, sensVolts;
@@ -120,7 +130,14 @@ void runPcurves() {
   if (millis() - timeGrainMillis > timeGrain_MS) {
     timeGrainMillis = millis();
 
-    doP_CurvesDiplay(0); // do curves display - it has its own millis timer too
+
+
+    if (modeFlag == REV_P) {
+      modeNameSel = 3; // do curves display - it has its own millis timer too - param is modeName selector - Rev P
+    } else {
+      modeNameSel = 2; // do curves display - it has its own millis timer too - param is modeName selector - Rev C
+    }
+    doP_CurvesDiplay(modeNameSel); // do curves display - it has its own millis timer too - param is modeName selector
 
 
     /******************** WAIT_4_START ********************/
@@ -128,22 +145,26 @@ void runPcurves() {
       /* read pots and set the curves parameters, wait here for user to press start switch
         update the display to ref);lect current parameters
       */
-      pinMode(startSwitchPin, INPUT_PULLUP);
+
       beginFanPWM = ((pots[PWMbeginPot] / 4) / 5) * 5; // quantize to 5's
       endFanPWM = ((pots[PWMendPot] / 4) / 5) * 5;
       beginCurvesTempC = map(pots[6], 0, 1023, 15, 48); // temp times 2 in map
       endCurvesTempC = map(pots[7], 0, 1023, 15, 48);
-      doP_CurvesDiplay(0);
-
+      currentTempC = beginCurvesTempC;
+      targetTempC = beginCurvesTempC;
+      currentTemp = beginCurvesTempC;
+      Serial.println("W_4_S");
       doFan(fanPWM);
-
       resetLEDs();
       digitalWrite(LED_BLUE_PIN , HIGH);
+      // doP_CurvesDiplay(modeNameSel);  // display updated changes
 
-      if (!digitalRead(startSwitchPin)) {
+
+      if (startSwitch) {
+        startSwitch = 0;
         stabilizeMillis = millis();
         doFan(fanPWM = beginFanPWM);
-        doP_CurvesDiplay(1);
+        //doP_CurvesDiplay(1); delete this if not necessary
         targetTempC = beginCurvesTempC;
 
         delay(500); // debounce the switch
@@ -165,10 +186,11 @@ void runPcurves() {
         cPstate = WAIT_4_TEMP;
       }
 
-      if (!digitalRead(resetSwitchPin)) {
-        resetDelay = millis();
+      if (resetSwitch) {
+        resetSwitch = 0;   // reset this manually every time - the switch read function only sets this variable
         coolDownMillis = millis();
         cPstate = DONE;
+        delay(resetDelay); // to debounce switch and make sure it doesn't "shoot through"
       }
 
       /******************** WAIT_4_TEMP ********************/
@@ -187,10 +209,11 @@ void runPcurves() {
         cPstate = CAPTURE_DATA;
       }
 
-      if (!digitalRead(resetSwitchPin)) {
-        resetDelay = millis();
+      if (resetSwitch) {
+        resetSwitch = 0;
         coolDownMillis = millis();
         cPstate = DONE;
+        delay(resetDelay);
       }
 
       /***************************** CAPTURE_DATA ************************************/
@@ -212,7 +235,8 @@ void runPcurves() {
       resetLEDs();
       digitalWrite(LED_GREEN_PIN , HIGH);
 
-      if (!digitalRead(resetSwitchPin)) {
+      if (resetSwitch) {
+        resetSwitch = 0;
         resetDelay = millis();
         coolDownMillis = millis();
         cPstate = DONE;
@@ -241,67 +265,79 @@ void runPcurves() {
 #ifdef sendDataToProcessing
 
       printDebugMillis = millis();
-      Serial.print(" fanPWM "); Serial.print(fanPWM);  Serial.print(" tach "); Serial.print(tachFloat);  Serial.print(" TR "); Serial.print(tachPitotRatio, 4);
-      Serial.print(" barom. ");  Serial.print(barometer); Serial.print(" pitotVolts ");
-      Serial.print(pitotVolts, 3); Serial.print(" sensorVolts "); Serial.println(sensorVolts, 3); 
+      Serial.print("fP,"); Serial.print(fanPWM);  Serial.print(",tch,"); Serial.print(tachFloat);
+      Serial.print(",TR,"); Serial.print(tachPitotRatio, 4);
+      Serial.print(",bR,");  Serial.print(barometer); Serial.print(",pV,");
+      Serial.print(pitotVolts, 3); Serial.print(",sV,"); Serial.println(sensorVolts, 3);
 
 #endif
+      /* Increment PWM (Fan Speed) and Temperature
+        Check for PWM endpoint - move to increment temp OR increment PWM
+        Check for Temperature endpoint  - move to done OR increment temperature and reset PWM to beginPoint
+      */
 
-      if (fanPWM != endFanPWM) { // start point smaller than end point PWM
-        if ( fanPWM < endFanPWM) {  // calculate and report data
-          fanPWM += 5;
+      if (fanPWM != endFanPWM) {  /* Increment fand speed (PWM) */
+        if ( endFanPWM < endFanPWM) {
+          fanPWM += PWM_INCREMENT_AMOUNT;
         } else {
-          fanPWM -= 5;
+          fanPWM -= PWM_INCREMENT_AMOUNT;
         }
+      } else {    /* Increment temp */
+        if (currentTempC == endCurvesTempC) {    // check for done
+          fanPWM = 100;
+          doFan(fanPWM);
+          coolDownMillis = millis();
+          cPstate = DONE;
+        } else {  // increment
+          if ( beginCurvesTempC < endCurvesTempC) {  // calculate and report data
+            currentTempC += TEMP_INCREMENT_AMOUNT;
+          } else {
+            currentTempC -= TEMP_INCREMENT_AMOUNT;
+          }
 
-        doFan(fanPWM);
-        stabilizeMillis = millis();
-        cPstate = STABLILZE_DELAY;
-
-      } else if (fanPWM == endFanPWM) {
-        fanPWM = 100;
-        doFan(fanPWM);
-        coolDownMillis = millis();
-        cPstate = DONE;
-      }
-
-
-      /******************** DONE ********************/
-    } else if (cPstate == DONE) {   // this is kind of an abort setting to reset in middle of a cycle
-
-      resetLEDs();
-      digitalWrite(LED_BLUE_PIN , HIGH);
-      digitalWrite(LED_GREEN_PIN , HIGH);
-      targetTempC = 0;
-      doFan(100);
-
-      if (millis() - coolDownMillis > COOL_DOWN_MS) {
-
-        cPstate = WAIT_4_START;
-        doFan(0);
-        if (!digitalRead(resetSwitchPin)) {  // user can bail out at any time
-          fanPWM = 0;
-          cPstate = WAIT_4_START;
+          targetTempC = (float)currentTempC;  // updates the heater temperature
         }
       }
+    }
 
-      if (!digitalRead(resetSwitchPin)) {  // user can bail out at any time
+    /******************** DONE ********************/
+  } else if (cPstate == DONE) {   // this is kind of an abort setting to reset in middle of a cycle
+
+    resetLEDs();
+    digitalWrite(LED_BLUE_PIN , HIGH);
+    digitalWrite(LED_GREEN_PIN , HIGH);
+    targetTempC = 0;
+    doFan(100);
+
+    if (millis() - coolDownMillis > COOL_DOWN_MS) {
+
+      cPstate = WAIT_4_START;
+      doFan(0);
+      if (resetSwitch || startSwitch) {  // user can bail out at any time
+        resetSwitch = 0;
+        startSwitch = 0;
         fanPWM = 0;
         cPstate = WAIT_4_START;
       }
-
     }
 
-#ifdef curvePdebug
-    if (millis() - printDebugMillis > 1000) {
-      printDebugMillis = millis();
-
-      // Serial.print(" cPstate "); Serial.print(cPstate); Serial.print("targetTempC"); Serial.println(targetTempC);
-      unsigned long elapsed = (millis() - captureMillis);
-      Serial.print("elapsed ");  Serial.println(elapsed);   Serial.print("  "); Serial.println(DATA_GATHERING_PERIOD_MS);
-      //Serial.print("mode "); Serial.print(mode); Serial.print(" cPstate "); Serial.println(cPstate);
+    if (!digitalRead(resetSwitchPin)) {  // user can bail out at any time
+      fanPWM = 0;
+      cPstate = WAIT_4_START;
     }
-#endif
 
   }
+
+#ifdef curvePdebug
+  if (millis() - printDebugMillis > 1000) {
+    printDebugMillis = millis();
+
+    // Serial.print(" cPstate "); Serial.print(cPstate); Serial.print("targetTempC"); Serial.println(targetTempC);
+    unsigned long elapsed = (millis() - captureMillis);
+    Serial.print("elapsed ");  Serial.println(elapsed);   Serial.print("  "); Serial.println(DATA_GATHERING_PERIOD_MS);
+    //Serial.print("mode "); Serial.print(mode); Serial.print(" cPstate "); Serial.println(cPstate);
+  }
+#endif
+
+}
 }

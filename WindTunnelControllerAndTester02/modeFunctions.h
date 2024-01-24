@@ -31,11 +31,20 @@ const int revCoutPin = A7; //  don't use this one
 const int pitotPin = A15;
 extern double targetTempC; // for PID temp control
 
+// char modeNames[4][13] = {"Man C", "Man P", "Crvs C", "Crvs P" };
+
+
+
+
+void manualTest(int cpFlag) {  // Run manual testing for sensor production
+
+};
+
 
 void testSensors() {
 
-Serial.println("testSensors - what is calling this ???????");
-Serial.println();
+  Serial.println("testSensors - what is calling this ???????");
+  Serial.println();
   /* tests Rev C and P sensors - wiring is different for test jigs but
      software is mostly the same.
   */
@@ -43,7 +52,7 @@ Serial.println();
   static int counter, maxv, minv, maxPitot, minPitot, initialized = 0, windPin, tempPin;
   static unsigned long totalWindADC, totalPitotADC, lastADCTime, testTime, printTime;
 
-  targetTempC = map(pots[4], 0, 1023, 15, 48); // temp times 2 in map  - this needs to go someplace else
+  //targetTempC = map(pots[4], 0, 1023, 15, 48); // temp times 2 in map  - this needs to go someplace else
   fanPWM = ((pots[fanPotNumber] / 4) / 5) * 5 ; // quantize to 5's
   doFan(fanPWM);
   if (fanPWM > 255) fanPWM = 255;

@@ -5,7 +5,7 @@
 Adafruit_MCP3008 adc;
 
 int pots[8];
-int momSw; //variable for momentary switches
+
 
 void initInterfaceBd() {  // this is the control board with the pots
   Serial.begin(57600);
@@ -26,7 +26,7 @@ void readInterfaceBd() {
 
   static unsigned long lastTime;
     
-  if (millis() - lastTime > 200 ) { // 5 times a sec
+  if (millis() - lastTime > 50 ) { // read fairly fast for responsiveness??
     lastTime = millis();
 
     for (int chan = 0; chan < 8; chan++) {
@@ -38,8 +38,8 @@ void readInterfaceBd() {
       momSw = (momSw * 2) + !digitalRead(pin); // switches active low state
     }
 
-/*
 
+/*
     for (int chan = 0; chan < 8; chan++) {
       Serial.print(pots[chan]);
       Serial.print("\t");
