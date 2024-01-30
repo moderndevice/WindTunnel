@@ -62,7 +62,6 @@ void setup() {
   newMode = 1; // triggers more printing
   printTempDiplay();
   newMode = 1; // triggers more printing
-  printTempDiplay();
   setupBarometer();
   // for the LED panel at top of controls
   pinMode(LED_WHITE_PIN, OUTPUT);
@@ -74,14 +73,14 @@ void setup() {
 }
 
 void loop() {
-  readTempC();
-  readInterfaceBd();
-  doHeaterLoop();      // heater control
-  doTestChamberLoop(); // offset control for temp offset
-  doSwitchDecode();
+  readTempC();  // errant print not here
+  readInterfaceBd();   // errant print not here
+  doHeaterLoop();      // errant print not here
+  doTestChamberLoop(); // offset control for temp offset // errant print not here
+  doSwitchDecode();  // errant print not here
   //doLCD2();
-  doFan(fanPWM);
-  readPitot();
-  //printTempDiplay();
-  getBarometer();
+  doFan(fanPWM); // errant print not here
+  readPitot(); // errant print not here
+ // printTempDiplay(); // errant print not here
+  getBarometer();  // errant print not here
 }

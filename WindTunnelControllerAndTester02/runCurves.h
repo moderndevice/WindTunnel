@@ -34,7 +34,7 @@ enum curveP_State {
 
 
 /* states to control various test modes */
-char cP_States[10][16] = {"WAIT", "STDL", "4TMP", "CPTR", "INCR", "DONE", "DONE", "MAN_C", "MAN_P"};
+char cP_StatesNames[10][16] = {"WAIT", "STDL", "4TMP", "CPTR", "INCR", "DONE", "DONE", "MAN_C", "MAN_P"};
 enum curveP_State cPstate = WAIT_4_START;
 
 float sensorVolts,  pitot_FP, tachFloat, pitotVolts, sensorADC, tachPitotRatio;
@@ -100,19 +100,19 @@ void doP_CurvesDiplay(int modeNameNumber) { // Temp thing to put up mode names
     Serial1.print("?x03?y3");
     Serial1.print(pitotOut, 0);  // pitot
     Serial1.print("?x08?y3");
-    Serial.println(sensorVolts, 1);
+  //  Serial1.print(sensorVolts, 1);
 
 
     Serial1.print("    ");
-    Serial1.print("?x12?y3");
-    Serial1.print(cP_States[cPstate]); // state machine state
+    Serial1.print("?x10?y3");
+    Serial1.print(cP_StatesNames[cPstate]); // state machine state
   }
 }
 
 void runCurves(int modeFlag) {
-  /* this function is setup as a state machine that checks the temperature compliance
+  /* A state machine that checks the temperature compliance
      then agregates sensor and voltage data over a period. And finally reports data.
-     The "Start Switch" (momentary) starts the state machine but also resets it,
+     The "Start Switch" (momentary) A "Cancel Switch" moves to "Done" state
      if it is pushed in any other state than the WAIT_4_START
   */
 
@@ -157,7 +157,6 @@ void runCurves(int modeFlag) {
       currentTempC = beginCurvesTempC;
       targetTempC = (float)beginCurvesTempC;
       currentTempC = beginCurvesTempC;
-      Serial.println("W_4_S");
       doFan(fanPWM);
       resetLEDs();
       digitalWrite(LED_BLUE_PIN , HIGH);
@@ -216,8 +215,9 @@ void runCurves(int modeFlag) {
       if (resetSwitch) {
         resetSwitch = 0;
         coolDownMillis = millis();
-        cPstate = DONE;
         delay(resetDelay);
+        cPstate = DONE;
+
       }
 
       /***************************** CAPTURE_DATA ************************************/
@@ -255,6 +255,16 @@ void runCurves(int modeFlag) {
       digitalWrite(LED_RED_PIN , HIGH);
       delay(200);
 
+#ifdef sendDataToProcessing
+
+      printDebugMillis = millis();
+      Serial.print("fP,"); Serial.print(fanPWM);  Serial.print(",tch,"); Serial.print(tachFloat);
+      Serial.print(",TR,"); Serial.print(tachPitotRatio, 4);
+      Serial.print(",bR,");  Serial.print(barometer); Serial.print(",pV,");
+      Serial.print(pitotVolts, 3); Serial.print(",sV,"); Serial.println(sensorVolts, 3);
+
+#endif
+
       pitot_FP = (float)totalPitotADC / (float)dataPoints;
       tachFloat =  (float)totalTach / (float)dataPoints;
       pitotVolts = (pitot_FP * ADC_REFERNCEVOLTAGE) / 1024.0;
@@ -266,32 +276,24 @@ void runCurves(int modeFlag) {
       totalTach = 0;
       dataPoints = 0;
 
-#ifdef sendDataToProcessing
 
-      printDebugMillis = millis();
-      Serial.print("fP,"); Serial.print(fanPWM);  Serial.print(",tch,"); Serial.print(tachFloat);
-      Serial.print(",TR,"); Serial.print(tachPitotRatio, 4);
-      Serial.print(",bR,");  Serial.print(barometer); Serial.print(",pV,");
-      Serial.print(pitotVolts, 3); Serial.print(",sV,"); Serial.println(sensorVolts, 3);
-
-#endif
       /* Increment PWM (Fan Speed) and Temperature
         Check for PWM endpoint - move to increment temp OR increment PWM
         Check for Temperature endpoint  - move to done OR increment temperature and reset PWM to beginPoint
       */
 
-      if (fanPWM != endFanPWM) {  /* Increment fand speed (PWM) */
-        if ( endFanPWM < endFanPWM) {
+      if (fanPWM != endFanPWM) {  /* test for done */
+        if ( beginFanPWM < endFanPWM) {
           fanPWM += PWM_INCREMENT_AMOUNT;
 
         } else {
           fanPWM -= PWM_INCREMENT_AMOUNT;
         }
         cPstate = STABLILZE_DELAY;
-  
+
 
       } else {  // fan is satisfied fanPWM == endFanPWM, check temperature
-        if (currentTempC == endCurvesTempC) {    // check for done
+        if (currentTempC == endCurvesTempC) {    // Done - init done state and switch modes
           fanPWM = 100;
           doFan(fanPWM);
           coolDownMillis = millis();
@@ -305,6 +307,12 @@ void runCurves(int modeFlag) {
           cPstate =  STABLILZE_DELAY;
           targetTempC = (float)currentTempC;  // updates the heater temperature
         }
+      }
+      if (resetSwitch) {
+        resetSwitch = 0;   // reset this manually every time - the switch read function only sets this variable
+        coolDownMillis = millis();
+        cPstate = DONE;
+        delay(resetDelay); // to debounce switch and make sure it doesn't "shoot through"
       }
     }
 

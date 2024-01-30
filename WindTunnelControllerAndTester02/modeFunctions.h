@@ -43,8 +43,8 @@ void manualTest(int cpFlag) {  // Run manual testing for sensor production
 
 void testSensors() {
 
-  Serial.println("testSensors - what is calling this ???????");
-  Serial.println();
+  //Serial.println("testSensors - what is calling this ???????");
+  //Serial.println();
   /* tests Rev C and P sensors - wiring is different for test jigs but
      software is mostly the same.
   */

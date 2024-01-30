@@ -87,7 +87,7 @@ void printTempDiplay() {
     // print the the slower moving data once a second - need to synch up the positions with fast moving data
     lastTimeSlow = millis();
 
-    Serial1.print("?f"); // clear screen
+   // Serial1.print("?f"); // clear screen
 
 
     //Serial1.print("?y0?l");  // line 0
